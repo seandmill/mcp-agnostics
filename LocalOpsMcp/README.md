@@ -25,7 +25,7 @@ A minimal C# MCP server for managing local notes.
   "id": 1,
   "method": "tools/call",
   "params": {
-    "name": "notes.create",
+    "name": "notes_create",
     "arguments": {
       "title": "Meeting Notes",
       "body": "Discussed Q4 roadmap. Action items: release v2.",
@@ -43,7 +43,7 @@ A minimal C# MCP server for managing local notes.
   "id": 2,
   "method": "tools/call",
   "params": {
-    "name": "notes.search",
+    "name": "notes_search",
     "arguments": {
       "query": "roadmap",
       "limit": 5

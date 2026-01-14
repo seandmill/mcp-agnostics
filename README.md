@@ -92,9 +92,9 @@ Once registered, the LLM has access to these tools. Use natural language that ma
 
 | Tool              | Trigger Phrases                                               |
 | ----------------- | ------------------------------------------------------------- |
-| `notes.create`    | "create a note", "save a note about...", "jot down..."        |
-| `notes.search`    | "search my notes for...", "find notes about...", "look up..." |
-| `notes.summarize` | "summarize my notes", "give me a summary of notes on..."      |
+| `notes_create`    | "create a note", "save a note about...", "jot down..."        |
+| `notes_search`    | "search my notes for...", "find notes about...", "look up..." |
+| `notes_summarize` | "summarize my notes", "give me a summary of notes on..."      |
 
 **Example prompts:**
 
@@ -106,8 +106,8 @@ Once registered, the LLM has access to these tools. Use natural language that ma
 
 | Tool               | Trigger Phrases                                                                     |
 | ------------------ | ----------------------------------------------------------------------------------- |
-| `simulate.run`     | "run a simulation", "simulate...", "beam search over...", "optimize..."             |
-| `simulate.explain` | "explain that simulation", "why did the simulation choose...", "walk me through..." |
+| `simulate_run`     | "run a simulation", "simulate...", "beam search over...", "optimize..."             |
+| `simulate_explain` | "explain that simulation", "why did the simulation choose...", "walk me through..." |
 
 **Example prompts:**
 
@@ -126,7 +126,7 @@ You can test servers directly by piping JSON-RPC to stdin:
 echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | dotnet run --project LocalOpsMcp
 
 # Call a tool
-echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"notes.create","arguments":{"title":"Test","body":"Hello"}}}' | dotnet run --project LocalOpsMcp
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"notes_create","arguments":{"title":"Test","body":"Hello"}}}' | dotnet run --project LocalOpsMcp
 ```
 
 ---

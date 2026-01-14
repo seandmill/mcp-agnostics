@@ -85,12 +85,12 @@ async def list_tools() -> list[Tool]:
     """Return available simulation tools."""
     return [
         Tool(
-            name="simulate.run",
+            name="simulate_run",
             description="Run a deterministic beam search simulation over a scenario",
             inputSchema=SIMULATE_RUN_SCHEMA
         ),
         Tool(
-            name="simulate.explain",
+            name="simulate_explain",
             description="Get a human-readable explanation of a simulation run",
             inputSchema=SIMULATE_EXPLAIN_SCHEMA
         )
@@ -101,9 +101,9 @@ async def list_tools() -> list[Tool]:
 async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
     """Handle tool invocations."""
     
-    if name == "simulate.run":
+    if name == "simulate_run":
         return await _handle_simulate_run(arguments)
-    elif name == "simulate.explain":
+    elif name == "simulate_explain":
         return await _handle_simulate_explain(arguments)
     else:
         raise ValueError(f"Unknown tool: {name}")

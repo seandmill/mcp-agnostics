@@ -1,6 +1,9 @@
 using System.Text.Json;
 using LocalOpsMcp;
 
+// Essential: Ensure stdout is unbuffered for MCP protocol
+Console.SetOut(new StreamWriter(Console.OpenStandardOutput()) { AutoFlush = true });
+
 var storage = new Storage();
 var handlers = new Handlers(storage);
 var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
@@ -34,9 +37,9 @@ while (true)
         {
             var tools = new List<Tool>
             {
-                new("notes.create", "Create a note", new { type = "object", properties = new { title = new { type = "string" }, body = new { type = "string" }, tags = new { type = "array", items = new { type = "string" } } }, required = new[] { "title", "body" } }),
-                new("notes.search", "Search notes", new { type = "object", properties = new { query = new { type = "string" }, tags = new { type = "array", items = new { type = "string" } }, limit = new { type = "integer" } }, required = new[] { "query" } }),
-                new("notes.summarize", "Summarize a note", new { type = "object", properties = new { id = new { type = "string" }, style = new { type = "string", @enum = new[] { "bullets", "short", "detailed" } } }, required = new[] { "id" } })
+                new("notes_create", "Create a note", new { type = "object", properties = new { title = new { type = "string" }, body = new { type = "string" }, tags = new { type = "array", items = new { type = "string" } } }, required = new[] { "title", "body" } }),
+                new("notes_search", "Search notes", new { type = "object", properties = new { query = new { type = "string" }, tags = new { type = "array", items = new { type = "string" } }, limit = new { type = "integer" } }, required = new[] { "query" } }),
+                new("notes_summarize", "Summarize a note", new { type = "object", properties = new { id = new { type = "string" }, style = new { type = "string", @enum = new[] { "bullets", "short", "detailed" } } }, required = new[] { "id" } })
             };
             Reply(msg.Id, new ListToolsResult(tools));
         }
@@ -49,9 +52,9 @@ while (true)
 
             CallToolResult result = callParams?.Name switch
             {
-                "notes.create" => handlers.CreateNote(callParams.Arguments),
-                "notes.search" => handlers.SearchNotes(callParams.Arguments),
-                "notes.summarize" => handlers.SummarizeNote(callParams.Arguments),
+                "notes_create" => handlers.CreateNote(callParams.Arguments),
+                "notes_search" => handlers.SearchNotes(callParams.Arguments),
+                "notes_summarize" => handlers.SummarizeNote(callParams.Arguments),
                 _ => throw new Exception($"Unknown tool {callParams?.Name}")
             };
             Reply(msg.Id, result);
@@ -83,6 +86,7 @@ while (true)
 void Reply(object? id, object result)
 {
     if (id == null) return;
-    var response = new JsonRpcResponse("2.0", id, result, null);
+    var response = new JsonRpcResponse("2.0", id, result);
     Console.WriteLine(JsonSerializer.Serialize(response, options));
+    Console.Out.Flush(); // Critical: flush immediately so the client doesn't hang
 }

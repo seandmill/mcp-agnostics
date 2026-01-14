@@ -17,17 +17,23 @@ public record JsonRpcRequest(
     [property: JsonPropertyName("params")] JsonElement? Params
 ) : JsonRpcMessage(JsonRpc, Id, Method);
 
+// JsonRpcResponse must NOT inherit from JsonRpcMessage - responses don't have "method"
 public record JsonRpcResponse(
-    string JsonRpc,
-    object? Id,
-    [property: JsonPropertyName("result")] object? Result,
-    [property: JsonPropertyName("error")] JsonRpcError? Error
-) : JsonRpcMessage(JsonRpc, Id, null);
+    [property: JsonPropertyName("jsonrpc")] string JsonRpc,
+    [property: JsonPropertyName("id")] object? Id,
+    [property: JsonPropertyName("result")] object? Result
+);
+
+public record JsonRpcErrorResponse(
+    [property: JsonPropertyName("jsonrpc")] string JsonRpc,
+    [property: JsonPropertyName("id")] object? Id,
+    [property: JsonPropertyName("error")] JsonRpcError Error
+);
 
 public record JsonRpcError(
     [property: JsonPropertyName("code")] int Code,
     [property: JsonPropertyName("message")] string Message,
-    [property: JsonPropertyName("data")] object? Data = null
+    [property: JsonPropertyName("data"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] object? Data = null
 );
 
 // MCP Initialization

@@ -18,7 +18,7 @@ A minimal Python MCP server for running deterministic beam search simulations.
 
 ## Example MCP Client Calls
 
-### simulate.run
+### simulate_run
 
 Run a beam search simulation:
 
@@ -28,7 +28,7 @@ Run a beam search simulation:
   "id": 1,
   "method": "tools/call",
   "params": {
-    "name": "simulate.run",
+    "name": "simulate_run",
     "arguments": {
       "scenario": {
         "initial_state": {
@@ -67,7 +67,7 @@ Run a beam search simulation:
 }
 ```
 
-### simulate.explain
+### simulate_explain
 
 Get a human-readable explanation of a run:
 
@@ -77,7 +77,7 @@ Get a human-readable explanation of a run:
   "id": 2,
   "method": "tools/call",
   "params": {
-    "name": "simulate.explain",
+    "name": "simulate_explain",
     "arguments": {
       "runId": "a1b2c3d4-..."
     }
