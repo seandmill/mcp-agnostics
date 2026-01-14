@@ -1,0 +1,68 @@
+# Tool Definition: notes_create
+# MCP Server: enterprise-notes
+
+tool:
+  id: notes_create
+  name: Create Note
+  description: Create a new note with title, body, and optional tags. Returns the created note's ID and timestamp.
+  version: "1.0.0"
+  
+  # MCP binding
+  mcp:
+    server: enterprise-notes
+    method: tools/call
+    tool_name: notes_create
+  
+  # Governance
+  risk_tier: low
+  idempotent: false
+  
+  # Access control
+  scopes:
+    data: [notes:write]
+    actions: [create]
+  required_roles: []  # Any authenticated user
+  
+  # SLA
+  timeout_ms: 5000
+  retry_policy: none  # Create is not idempotent, don't retry
+  
+  # Schemas
+  input_schema:
+    type: object
+    properties:
+      title:
+        type: string
+        description: The title of the note
+        maxLength: 200
+      body:
+        type: string
+        description: The main content of the note
+        maxLength: 10000
+      tags:
+        type: array
+        items:
+          type: string
+        description: Optional tags for categorization
+        maxItems: 10
+    required: [title, body]
+    
+  output_schema:
+    type: object
+    properties:
+      success:
+        type: boolean
+      id:
+        type: string
+        description: The created note's unique identifier
+      createdAt:
+        type: string
+        format: date-time
+    required: [success, id, createdAt]
+    
+  # Redaction rules
+  redaction:
+    input:
+      - field: body
+        action: pii_scan
+    output: []

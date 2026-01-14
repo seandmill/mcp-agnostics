@@ -1,0 +1,74 @@
+# Tool Definition: docs_query
+# MCP Server: local-knowledge
+
+tool:
+  id: docs_query
+  name: Query Documents
+  description: Search the local knowledge index using keyword/TF scoring.
+  version: "1.0.0"
+  
+  # MCP binding
+  mcp:
+    server: local-knowledge
+    method: tools/call
+    tool_name: docs_query
+  
+  # Governance
+  risk_tier: low
+  idempotent: true
+  
+  # Access control
+  scopes:
+    data: [knowledge:read]
+    actions: [search]
+  required_roles: []  # Any authenticated user can search
+  
+  # SLA
+  timeout_ms: 5000
+  retry_policy: exponential_backoff
+  max_retries: 2
+  
+  # Schemas
+  input_schema:
+    type: object
+    properties:
+      query:
+        type: string
+        description: Search query (keywords)
+        minLength: 1
+        maxLength: 500
+      limit:
+        type: integer
+        description: Maximum number of results
+        default: 10
+        minimum: 1
+        maximum: 100
+    required: [query]
+    
+  output_schema:
+    type: object
+    properties:
+      query:
+        type: string
+      resultCount:
+        type: integer
+      results:
+        type: array
+        items:
+          type: object
+          properties:
+            id:
+              type: string
+            score:
+              type: number
+            snippet:
+              type: string
+            metadata:
+              type: object
+    required: [query, resultCount, results]
+    
+  redaction:
+    input: []
+    output:
+      - field: results[*].snippet
+        action: pii_redact

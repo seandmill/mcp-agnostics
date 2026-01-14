@@ -1,0 +1,83 @@
+# Tool Definition: notes_search
+# MCP Server: enterprise-notes
+
+tool:
+  id: notes_search
+  name: Search Notes
+  description: Search notes by keyword query and optional tag filters. Returns matching notes ranked by relevance.
+  version: "1.0.0"
+  
+  # MCP binding
+  mcp:
+    server: enterprise-notes
+    method: tools/call
+    tool_name: notes_search
+  
+  # Governance
+  risk_tier: low
+  idempotent: true
+  
+  # Access control
+  scopes:
+    data: [notes:read]
+    actions: [search]
+  required_roles: []
+  
+  # SLA
+  timeout_ms: 5000
+  retry_policy: exponential_backoff
+  max_retries: 2
+  
+  # Schemas
+  input_schema:
+    type: object
+    properties:
+      query:
+        type: string
+        description: Search query (matches title and body)
+        minLength: 1
+        maxLength: 500
+      tags:
+        type: array
+        items:
+          type: string
+        description: Filter by tags (OR logic)
+      limit:
+        type: integer
+        description: Maximum results to return
+        default: 10
+        minimum: 1
+        maximum: 100
+    required: [query]
+    
+  output_schema:
+    type: object
+    properties:
+      query:
+        type: string
+      count:
+        type: integer
+      results:
+        type: array
+        items:
+          type: object
+          properties:
+            id:
+              type: string
+            title:
+              type: string
+            snippet:
+              type: string
+            tags:
+              type: array
+              items:
+                type: string
+            createdAt:
+              type: string
+    required: [query, count, results]
+    
+  redaction:
+    input: []
+    output:
+      - field: results[*].snippet
+        action: pii_redact

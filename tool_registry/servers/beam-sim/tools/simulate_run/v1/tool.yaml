@@ -1,0 +1,77 @@
+# Tool Definition: simulate_run
+# MCP Server: beam-sim
+
+tool:
+  id: simulate_run
+  name: Run Beam Search Simulation
+  description: Run a deterministic beam search simulation over a scenario with constraints.
+  version: "1.0.0"
+  
+  # MCP binding
+  mcp:
+    server: beam-sim
+    method: tools/call
+    tool_name: simulate_run
+  
+  # Governance
+  risk_tier: medium
+  idempotent: true  # Same seed = same result
+  
+  # Access control
+  scopes:
+    data: [simulations:write]
+    actions: [execute]
+  required_roles: [analyst, data_scientist, executive]
+  
+  # SLA
+  timeout_ms: 30000  # Simulations can take time
+  retry_policy: exponential_backoff
+  max_retries: 1
+  
+  # Schemas
+  input_schema:
+    type: object
+    properties:
+      scenario:
+        type: object
+        description: Simulation scenario with initial_state and optional actions
+        properties:
+          initial_state:
+            type: object
+            description: Initial state values (numeric fields)
+          actions:
+            type: array
+            description: Optional predefined actions
+        required: [initial_state]
+      constraints:
+        type: object
+        description: Constraints like max_x, min_y for scoring penalties
+      beamWidth:
+        type: integer
+        description: Number of candidates to keep per step
+        default: 5
+        minimum: 1
+        maximum: 20
+      maxSteps:
+        type: integer
+        description: Maximum simulation steps
+        default: 10
+        minimum: 1
+        maximum: 100
+      seed:
+        type: integer
+        description: Random seed for deterministic results
+    required: [scenario]
+    
+  output_schema:
+    type: object
+    properties:
+      runId:
+        type: string
+      bestResult:
+        type: object
+      topK:
+        type: array
+      scoreBreakdown:
+        type: object
+    required: [runId, bestResult]

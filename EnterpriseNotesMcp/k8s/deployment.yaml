@@ -1,0 +1,249 @@
+# =============================================================================
+# Kubernetes Deployment for Enterprise Notes MCP Server
+# =============================================================================
+# 
+# Deploy with: kubectl apply -f k8s/
+#
+# Prerequisites:
+# - Kubernetes cluster (AKS, EKS, GKE, or on-prem)
+# - kubectl configured
+# - Container image pushed to registry
+#
+# For Azure Kubernetes Service (AKS):
+#   az aks get-credentials --resource-group <rg> --name <cluster>
+#   kubectl apply -f k8s/
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: enterprise-notes-mcp
+  namespace: ai-platform
+  labels:
+    app: enterprise-notes-mcp
+    component: mcp-server
+    tier: backend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: enterprise-notes-mcp
+  template:
+    metadata:
+      labels:
+        app: enterprise-notes-mcp
+        component: mcp-server
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: mcp-service-account
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: mcp-server
+          image: your-registry.azurecr.io/enterprise-notes-mcp:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              value: "Production"
+            - name: ASPNETCORE_URLS
+              value: "http://+:8080"
+            - name: Authentication__Enabled
+              value: "true"
+            # API keys from Kubernetes secret
+            - name: Authentication__ApiKeys__0__Key
+              valueFrom:
+                secretKeyRef:
+                  name: mcp-secrets
+                  key: api-key-orchestrator
+            - name: Authentication__ApiKeys__0__UserId
+              value: "llm-orchestrator"
+            - name: Authentication__ApiKeys__0__Role
+              value: "service"
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "1000m"
+              memory: "512Mi"
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          volumeMounts:
+            - name: data-volume
+              mountPath: /app/data
+      volumes:
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: mcp-data-pvc
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: enterprise-notes-mcp
+                topologyKey: kubernetes.io/hostname
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: enterprise-notes-mcp
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: enterprise-notes-mcp
+  namespace: ai-platform
+  labels:
+    app: enterprise-notes-mcp
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+      protocol: TCP
+  selector:
+    app: enterprise-notes-mcp
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: mcp-service-account
+  namespace: ai-platform
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mcp-data-pvc
+  namespace: ai-platform
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: managed-premium  # Azure managed disk
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mcp-secrets
+  namespace: ai-platform
+type: Opaque
+stringData:
+  # REPLACE THESE IN PRODUCTION - use Azure Key Vault or similar
+  api-key-orchestrator: "REPLACE-WITH-SECURE-API-KEY"
+
+---
+# Horizontal Pod Autoscaler
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: enterprise-notes-mcp-hpa
+  namespace: ai-platform
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: enterprise-notes-mcp
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
+
+---
+# Network Policy - restrict traffic to MCP server
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: enterprise-notes-mcp-netpol
+  namespace: ai-platform
+spec:
+  podSelector:
+    matchLabels:
+      app: enterprise-notes-mcp
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow traffic from orchestrator namespace
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: llm-orchestrator
+        - podSelector:
+            matchLabels:
+              role: orchestrator
+      ports:
+        - port: 8080
+          protocol: TCP
+    # Allow traffic from ingress controller
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+      ports:
+        - port: 8080
+          protocol: TCP
+  egress:
+    # Allow DNS
+    - to:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - port: 53
+          protocol: UDP
+    # Allow outbound to Azure services (if needed)
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+      ports:
+        - port: 443
+          protocol: TCP

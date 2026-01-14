@@ -1,0 +1,49 @@
+# Tool Definition: simulate_explain
+# MCP Server: beam-sim
+
+tool:
+  id: simulate_explain
+  name: Explain Simulation
+  description: Get a human-readable explanation of a previous simulation run.
+  version: "1.0.0"
+  
+  # MCP binding
+  mcp:
+    server: beam-sim
+    method: tools/call
+    tool_name: simulate_explain
+  
+  # Governance
+  risk_tier: low
+  idempotent: true
+  
+  # Access control
+  scopes:
+    data: [simulations:read]
+    actions: [explain]
+  required_roles: [analyst, data_scientist, executive]
+  
+  # SLA
+  timeout_ms: 5000
+  retry_policy: exponential_backoff
+  max_retries: 2
+  
+  # Schemas
+  input_schema:
+    type: object
+    properties:
+      runId:
+        type: string
+        description: ID of a previous simulation run to explain
+    required: [runId]
+    
+  output_schema:
+    type: object
+    properties:
+      type:
+        type: string
+        const: text
+      text:
+        type: string
+        description: Human-readable explanation
+    required: [type, text]

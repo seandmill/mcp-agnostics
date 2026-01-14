@@ -14,3 +14,7 @@ venv/
 
 # MacOS
 .DS_Store
+
+# TypeScript / Node
+**/node_modules
+**/dist

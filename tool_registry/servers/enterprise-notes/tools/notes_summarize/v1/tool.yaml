@@ -1,0 +1,60 @@
+# Tool Definition: notes_summarize
+# MCP Server: enterprise-notes
+
+tool:
+  id: notes_summarize
+  name: Summarize Note
+  description: Generate a summary of a note in various styles - bullets, short, or detailed.
+  version: "1.0.0"
+  
+  # MCP binding
+  mcp:
+    server: enterprise-notes
+    method: tools/call
+    tool_name: notes_summarize
+  
+  # Governance
+  risk_tier: low
+  idempotent: true
+  
+  # Access control
+  scopes:
+    data: [notes:read]
+    actions: [summarize]
+  required_roles: []
+  
+  # SLA
+  timeout_ms: 5000
+  retry_policy: exponential_backoff
+  max_retries: 2
+  
+  # Schemas
+  input_schema:
+    type: object
+    properties:
+      id:
+        type: string
+        description: The note ID to summarize
+      style:
+        type: string
+        description: Summary style
+        enum: [bullets, short, detailed]
+        default: short
+    required: [id]
+    
+  output_schema:
+    type: object
+    properties:
+      type:
+        type: string
+        const: text
+      text:
+        type: string
+        description: The generated summary
+    required: [type, text]
+    
+  redaction:
+    input: []
+    output:
+      - field: text
+        action: pii_redact

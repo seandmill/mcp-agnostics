@@ -1,0 +1,74 @@
+# Tool Registry Configuration
+# This file defines global settings and MCP server endpoints
+
+version: "1.0"
+registry_name: "mcp-agnostics"
+description: "MCP Server Tool Registry for Enterprise AI Workflows"
+
+# MCP Server Endpoints
+# Tool Gateway acts as MCP client and calls these servers
+mcp_servers:
+  enterprise-notes:
+    name: "Enterprise Notes MCP"
+    description: "Note management with create, search, and summarize"
+    transport: http
+    endpoint: ${ENTERPRISE_NOTES_MCP_URL:-http://enterprise-notes-mcp:8080}/mcp
+    health_endpoint: ${ENTERPRISE_NOTES_MCP_URL:-http://enterprise-notes-mcp:8080}/health
+    auth:
+      type: api_key
+      header: X-API-Key
+      secret_ref: mcp-enterprise-notes-api-key  # Reference to secrets manager
+    owner: platform-team
+    contact: platform@company.com
+
+  beam-sim:
+    name: "Beam Simulation MCP"
+    description: "Deterministic beam search simulation"
+    transport: http
+    endpoint: ${BEAM_SIM_MCP_URL:-http://beam-sim-mcp:8081}/mcp
+    health_endpoint: ${BEAM_SIM_MCP_URL:-http://beam-sim-mcp:8081}/health
+    auth:
+      type: api_key
+      header: X-API-Key
+      secret_ref: mcp-beam-sim-api-key
+    owner: analytics-team
+    contact: analytics@company.com
+
+  local-knowledge:
+    name: "Local Knowledge MCP"
+    description: "Document indexing and TF/keyword search"
+    transport: http
+    endpoint: ${LOCAL_KNOWLEDGE_MCP_URL:-http://local-knowledge-mcp:8082}/mcp
+    health_endpoint: ${LOCAL_KNOWLEDGE_MCP_URL:-http://local-knowledge-mcp:8082}/health
+    auth:
+      type: api_key
+      header: X-API-Key
+      secret_ref: mcp-local-knowledge-api-key
+    owner: knowledge-team
+    contact: knowledge@company.com
+
+# Global defaults for all tools
+defaults:
+  timeout_ms: 10000
+  retry_policy: exponential_backoff
+  max_retries: 3
+  audit_level: full
+  redaction:
+    input: [pii_scan]
+    output: [pii_redact]
+
+# Risk tier definitions
+risk_tiers:
+  low:
+    hitl_required: false
+    auto_approve: true
+    audit_level: minimal
+  medium:
+    hitl_required: false
+    auto_approve: true
+    audit_level: standard
+  high:
+    hitl_required: true
+    auto_approve: false
+    audit_level: full
+    requires_approval_from: [senior_agent, manager, executive]

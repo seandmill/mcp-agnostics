@@ -1,0 +1,46 @@
+# Docker Compose for Enterprise Notes MCP Server
+# Use: docker-compose up -d
+
+version: '3.8'
+
+services:
+  enterprise-notes-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: enterprise-notes-mcp:latest
+    container_name: enterprise-notes-mcp
+    ports:
+      - "8080:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - Authentication__Enabled=true
+      - Authentication__ApiKeys__0__Key=${MCP_API_KEY:-production-api-key}
+      - Authentication__ApiKeys__0__UserId=orchestrator
+      - Authentication__ApiKeys__0__Role=service
+    volumes:
+      - mcp-data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+
+volumes:
+  mcp-data:
+    driver: local
