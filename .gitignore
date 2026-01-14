@@ -11,3 +11,6 @@ __pycache__/
 venv/
 *.json
 !pyproject.toml
+
+# MacOS
+.DS_Store

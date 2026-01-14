@@ -43,7 +43,7 @@ Many IDEs support MCP servers. Here's how to register them:
 
 ### macOS/Linux
 
-Edit `~/.gemini/settings.json`:
+Edit `~/.gemini/settings.json` or `~/.gemini/<IDE>/mcp_config.json`:
 
 ```json
 {
